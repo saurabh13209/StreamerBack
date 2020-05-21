@@ -2,10 +2,22 @@ const mongoose = require('mongoose');
 
 const room = new mongoose.Schema({
     videoUrl: { type: String },
-    currentPosition: { type: Object },
+    currentPosition: { type: Number },
+    status: { type: String },
     users: { type: Array },
     password: { type: String },
     createdOn: { type: Date }
 })
 
-module.exports = Room = mongoose.model('room', room)
+
+const user = new mongoose.Schema({
+    name: { type: String },
+    token: { type: String },
+    socket: { type: String }
+})
+
+
+module.exports = {
+    roomSchema: mongoose.model('room', room),
+    userSchema: mongoose.model('user', user)
+}

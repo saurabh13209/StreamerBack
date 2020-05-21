@@ -1,24 +1,39 @@
 const express = require("express")
-const mongoose = require('mongoose');       // MongoDb fucn
-const User = require('../DB/RoomSchema');   // Schema
+const { roomSchema, userSchema } = require('../DB/RoomSchema');   // Schema
 const route = express.Router();             // routes
 
 route.post("/createRoom", (req, res) => {
-    new User({
-        videoUrl: "https://youtube.com",
-        currentPosition: { hour: 0, min: 13, sec: 20 },
-        users: [{ id: "10029302", role: "Host" }, { id: "10293", role: "User" }],
+    new roomSchema({
+        videoUrl: "1KMCKphn6CY",
+        currentPosition: 0,
+        status: "Loading",
+        users: [{ id: "saurabh13209", role: "Host" }, { id: "vikas", role: "User" }],
         password: "",
         createdOn: new Date()
     }).save();
     res.json()
 })
 
+route.post("/createUser", (req, res) => {
+    new userSchema({
+        name: "saurabh13209",
+        token: "",
+        socket: ""
+    }).save()
+    res.json()
+})
+
 route.post("/getRoom", (req, res) => {
-    User.find({}, (err, docs) => {
+    roomSchema.find({ videoUrl: "1KMCKphn6CY" }, (err, docs) => {
         if (err) res.json(err)
         else res.json(docs)
     })
 })
+
+route.post("/updateData", (req, res) => {
+    console.log("K")
+    res.json();
+})
+
 
 module.exports = route
