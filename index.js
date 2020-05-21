@@ -8,7 +8,8 @@ app.use(express.json({ extended: false }))
 
 app.use("/api/room", require("./api/room"))
 
-var server = app.listen(4000, () => {
+var PORT = process.env.PORT || 4000
+var server = app.listen(PORT, () => {
     console.log("server started");
 });
 
