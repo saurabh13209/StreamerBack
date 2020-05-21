@@ -18,7 +18,6 @@ var io = socket(server);
 io.on('connection', (socket) => {
     // update user data socket
     socket.on("updateUser", res => {
-        console.log(res)
         userSchema.update(
             {
                 "name": res.name
@@ -38,7 +37,7 @@ io.on('connection', (socket) => {
     socket.on("setVideoData", res => {
         roomSchema.update(
             {
-                "videoUrl": "1KMCKphn6CY"
+                "videoUrl": res.videoUrl
             },
             {
                 $set: {
@@ -47,9 +46,12 @@ io.on('connection', (socket) => {
                 }
             },
             (err, doc) => {
-                roomSchema.find({ "videoUrl": "1KMCKphn6CY" }, (err, doc) => {
+                if (err) return
+                roomSchema.find({ "videoUrl": res.videoUrl }, (err, doc) => {
+                    if (err) return
                     var socketsId = []
                     var tempUserArray = [];
+                    if (doc.length == 0) return
                     doc[0]["users"].forEach((user, index) => {
                         if (user["role"] != "Host") {
                             tempUserArray = [
@@ -60,7 +62,7 @@ io.on('connection', (socket) => {
                     })
                     if (tempUserArray.length > 0) {
                         tempUserArray.forEach((user, index) => {
-                            userSchema.find({ "name": user["id"] }, (err, userDoc) => {
+                            userSchema.find({ "name": user["name"] }, (err, userDoc) => {
                                 socketsId = [
                                     ...socketsId,
                                     userDoc[0]["socket"]
@@ -93,7 +95,7 @@ io.on('connection', (socket) => {
             })
             if (tempUserArray.length > 0) {
                 tempUserArray.forEach((user, index) => {
-                    userSchema.find({ "name": user["id"] }, (err, userDoc) => {
+                    userSchema.find({ "name": user["name"] }, (err, userDoc) => {
                         socketsId = [
                             ...socketsId,
                             userDoc[0]["socket"]
@@ -108,6 +110,28 @@ io.on('connection', (socket) => {
             }
         })
         socket.broadcast
+    })
+
+    // Close the room
+    socket.on("closeRoom", res => {
+        roomSchema.deleteOne({ videoUrl: res }, (err, doc) => { if (err) console.log(err) })
+    })
+
+    // Remove user
+    socket.on("removeUser", res => {
+        roomSchema.update(
+            {
+                videoUrl: res.videoUrl
+            }, {
+            $set: {
+                "users": res.newUser
+            }
+        },
+            (err, doc) => {
+                if (err) return
+            }
+        )
+
     })
 
 

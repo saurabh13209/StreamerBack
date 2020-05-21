@@ -3,20 +3,24 @@ const { roomSchema, userSchema } = require('../DB/RoomSchema');   // Schema
 const route = express.Router();             // routes
 
 route.post("/createRoom", (req, res) => {
+    console.log(req.body)
     new roomSchema({
-        videoUrl: "1KMCKphn6CY",
-        currentPosition: 0,
-        status: "Loading",
-        users: [{ id: "saurabh13209", role: "Host" }, { id: "vikas", role: "User" }],
-        password: "",
-        createdOn: new Date()
+        videoUrl: req.body.videoUrl,
+        title: req.body.title,
+        image: req.body.image,
+        channelId: req.body.channelId,
+        currentPosition: req.body.currentPosition,
+        status: req.body.status,
+        users: req.body.users,
+        password: req.body.password,
+        createdOn: req.body.createdOn
     }).save();
     res.json()
 })
 
 route.post("/createUser", (req, res) => {
     new userSchema({
-        name: "saurabh13209",
+        name: req.body.name,
         token: "",
         socket: ""
     }).save()
@@ -24,16 +28,27 @@ route.post("/createUser", (req, res) => {
 })
 
 route.post("/getRoom", (req, res) => {
-    roomSchema.find({ videoUrl: "1KMCKphn6CY" }, (err, docs) => {
+    roomSchema.find({}, (err, docs) => {
         if (err) res.json(err)
         else res.json(docs)
     })
 })
 
-route.post("/updateData", (req, res) => {
-    console.log("K")
-    res.json();
+route.post("/addUser", (req, res) => {
+    roomSchema.update(
+        {
+            videoUrl: req.body.videoUrl
+        },
+        {
+            $set: {
+                users: req.body.users
+            }
+        },
+        (err, doc) => {
+            if (err) return
+            res.json()
+        }
+    )
 })
-
 
 module.exports = route

@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 
 const room = new mongoose.Schema({
     videoUrl: { type: String },
+    title: { type: String },
+    image: { type: String },
+    channelId: { type: String },
     currentPosition: { type: Number },
     status: { type: String },
     users: { type: Array },
