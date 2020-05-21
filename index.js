@@ -44,6 +44,35 @@ io.on('connection', (socket) => {
                     "currentPosition": res.currentTime,
                     "status": res.status
                 }
+            },
+            (err, doc) => {
+                roomSchema.find({ "videoUrl": "1KMCKphn6CY" }, (err, doc) => {
+                    var socketsId = []
+                    var tempUserArray = [];
+                    doc[0]["users"].forEach((user, index) => {
+                        if (user["role"] != "Host") {
+                            tempUserArray = [
+                                ...tempUserArray,
+                                user
+                            ]
+                        }
+                    })
+                    if (tempUserArray.length > 0) {
+                        tempUserArray.forEach((user, index) => {
+                            userSchema.find({ "name": user["id"] }, (err, userDoc) => {
+                                socketsId = [
+                                    ...socketsId,
+                                    userDoc[0]["socket"]
+                                ]
+
+                                if (tempUserArray.length - 1 == index) {
+                                    console.log(socketsId)
+                                    socketsId.forEach(id => io.to(id).emit("updateVideo", res))
+                                }
+                            })
+                        })
+                    }
+                })
             }
         );
     })
