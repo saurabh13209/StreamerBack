@@ -32,7 +32,6 @@ route.post("/addVideo", (req, res) => {
             res.json()
         }
     )
-    res.json()
 })
 
 route.post("/createUser", (req, res) => {
