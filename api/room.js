@@ -28,11 +28,10 @@ route.post("/addVideo", (req, res) => {
         },
         (err, doc) => {
             if (err) return
+            // Call socket here and emit all other
             res.json()
         }
-    ).then(res => {
-        // Call socket and emit to add that video has been upcdated
-    })
+    )
     res.json()
 })
 
