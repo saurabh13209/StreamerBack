@@ -2,6 +2,8 @@ var express = require('express');
 var socket = require('socket.io');
 var app = express();
 const connectDb = require('./DB/connection')
+const route = express.Router();             // routes
+
 var { roomSchema, userSchema } = require("./DB/RoomSchema");
 connectDb();
 app.use(express.json({ extended: false }))
@@ -13,7 +15,7 @@ var server = app.listen(PORT, () => {
     console.log("server started");
 });
 
-
+// this is io which need to be called to room.js function
 var io = socket(server);
 io.on('connection', (socket) => {
     // update user data socket
@@ -37,7 +39,7 @@ io.on('connection', (socket) => {
     socket.on("setVideoData", res => {
         roomSchema.update(
             {
-                "videoUrl": res.videoUrl
+                "roomName": res.roomName
             },
             {
                 $set: {
@@ -47,7 +49,7 @@ io.on('connection', (socket) => {
             },
             (err, doc) => {
                 if (err) return
-                roomSchema.find({ "videoUrl": res.videoUrl }, (err, doc) => {
+                roomSchema.find({ "roomName": res.roomname }, (err, doc) => {
                     if (err) return
                     var socketsId = []
                     var tempUserArray = [];
@@ -114,7 +116,42 @@ io.on('connection', (socket) => {
 
     // Close the room
     socket.on("closeRoom", res => {
-        roomSchema.deleteOne({ videoUrl: res }, (err, doc) => { if (err) console.log(err) })
+        roomSchema.find({ videoUrl: res }, (err, doc) => {
+            if (doc.length == 0) return
+            var usersArray = [];
+            doc[0].users.forEach(user => {
+                if (user["role"] == "User") {
+                    usersArray = [
+                        ...usersArray,
+                        user["name"]
+                    ]
+                }
+            })
+            if (usersArray.length > 0) {
+                var socketsId = [];
+                usersArray.forEach((user, index) => {
+                    userSchema.find({ "name": user }, (err, userDoc) => {
+                        socketsId = [
+                            ...socketsId,
+                            userDoc[0]["socket"]
+                        ]
+
+                        if (usersArray.length - 1 == index) {
+                            console.log(socketsId)
+                            socketsId.forEach(id => io.to(id).emit("closeVideo", {}))
+                            roomSchema.deleteOne({ videoUrl: res }, (err, doc) => {
+                                if (err) console.log(err)
+                            })
+                        }
+                    })
+                })
+            } else {
+                console.log("k")
+                roomSchema.deleteOne({ videoUrl: res }, (err, doc) => {
+                    if (err) console.log(err)
+                })
+            }
+        })
     })
 
     // Remove user
