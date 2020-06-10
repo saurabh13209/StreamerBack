@@ -15,7 +15,7 @@ var server = app.listen(PORT, () => {
     console.log("server started");
 });
 
-// this is io which need to be called to room.js function
+
 var io = socket(server);
 io.on('connection', (socket) => {
     // update user data socket
