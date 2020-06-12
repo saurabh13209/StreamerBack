@@ -11,7 +11,8 @@ route.post("/createRoom", (req, res) => {
         users: req.body.users,
         password: req.body.password,
         createdOn: req.body.createdOn,
-        videoQueue: req.body.videoQueue
+        videoQueue: req.body.videoQueue,
+        chat: []
     }).save();
     res.json()
 })
@@ -28,12 +29,43 @@ route.post("/addVideo", (req, res) => {
         },
         (err, doc) => {
             if (err) return
+            roomSchema.find({ "roomName": req.body.roomName }, (err, doc) => {
+                if (err) return
+                var socketsId = []
+                var tempUserArray = [];
+                if (doc.length == 0) return
+                doc[0]["users"].forEach((user, index) => {
+                    tempUserArray = [
+                        ...tempUserArray,
+                        user
+                    ]
+                })
+                if (tempUserArray.length > 0) {
+                    tempUserArray.forEach((user, index) => {
+                        userSchema.find({ "name": user["name"] }, (err, userDoc) => {
+                            socketsId = [
+                                ...socketsId,
+                                userDoc[0]["socket"]
+                            ]
+
+                            if (tempUserArray.length - 1 == index) {
+                                console.log(socketsId)
+                                socketsId.forEach(id => io.to(id).emit("updateQueue", req.body))
+                            }
+                        })
+                    })
+                }
+            })
             res.json()
         }
-    ).then(res => {
-        // Call socket and emit to add that video has been upcdated
+    )
+})
+
+route.post("/getMessage", (req, res) => {
+    roomSchema.find({ "roomName": req.body.roomName }, (err, doc) => {
+        console.log(doc[0].chat)
+        res.json(doc[0].chat)
     })
-    res.json()
 })
 
 route.post("/createUser", (req, res) => {
@@ -70,3 +102,4 @@ route.post("/addUser", (req, res) => {
     )
 })
 
+module.exports = route
