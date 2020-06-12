@@ -7,7 +7,8 @@ const room = new mongoose.Schema({
     users: { type: Array },
     password: { type: String },
     createdOn: { type: Date },
-    videoQueue: { type: Array }
+    videoQueue: { type: Array },
+    chat: { type: Array }
 })
 
 

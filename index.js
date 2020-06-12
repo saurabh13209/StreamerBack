@@ -16,7 +16,7 @@ var server = app.listen(PORT, () => {
 });
 
 
-var io = socket(server);
+global.io = socket(server);
 io.on('connection', (socket) => {
     // update user data socket
     socket.on("updateUser", res => {
@@ -49,13 +49,13 @@ io.on('connection', (socket) => {
             },
             (err, doc) => {
                 if (err) return
-                roomSchema.find({ "roomName": res.roomname }, (err, doc) => {
+                roomSchema.find({ "roomName": res.roomName }, (err, doc) => {
                     if (err) return
                     var socketsId = []
                     var tempUserArray = [];
                     if (doc.length == 0) return
                     doc[0]["users"].forEach((user, index) => {
-                        if (user["role"] != "Host") {
+                        if (user["name"] != res.username) {
                             tempUserArray = [
                                 ...tempUserArray,
                                 user
@@ -73,6 +73,51 @@ io.on('connection', (socket) => {
                                 if (tempUserArray.length - 1 == index) {
                                     console.log(socketsId)
                                     socketsId.forEach(id => io.to(id).emit("updateVideo", res))
+                                }
+                            })
+                        })
+                    }
+                })
+            }
+        );
+    })
+
+    socket.on("setQueueData", res => {
+        roomSchema.update(
+            {
+                "roomName": res.roomName
+            },
+            {
+                $set: {
+                    "currentPosition": 0,
+                    "status": "playing",
+                    "videoQueue": res.queueData
+                }
+            },
+            (err, doc) => {
+                if (err) return
+                roomSchema.find({ "roomName": res.roomName }, (err, doc) => {
+                    if (err) return
+                    var socketsId = []
+                    var tempUserArray = [];
+                    if (doc.length == 0) return
+                    doc[0]["users"].forEach((user, index) => {
+                        tempUserArray = [
+                            ...tempUserArray,
+                            user
+                        ]
+                    })
+                    if (tempUserArray.length > 0) {
+                        tempUserArray.forEach((user, index) => {
+                            userSchema.find({ "name": user["name"] }, (err, userDoc) => {
+                                socketsId = [
+                                    ...socketsId,
+                                    userDoc[0]["socket"]
+                                ]
+
+                                if (tempUserArray.length - 1 == index) {
+                                    console.log(socketsId)
+                                    socketsId.forEach(id => io.to(id).emit("updateQueue", res))
                                 }
                             })
                         })
@@ -114,6 +159,81 @@ io.on('connection', (socket) => {
         socket.broadcast
     })
 
+    socket.on("createEmoji", res => {
+        console.log(res)
+        roomSchema.find({ "roomName": res.roomName }, (err, doc) => {
+            if (err) return
+            var socketsId = []
+            var tempUserArray = [];
+            if (doc.length == 0) return
+            doc[0]["users"].forEach((user, index) => {
+                tempUserArray = [
+                    ...tempUserArray,
+                    user
+                ]
+            })
+            if (tempUserArray.length > 0) {
+                tempUserArray.forEach((user, index) => {
+                    userSchema.find({ "name": user["name"] }, (err, userDoc) => {
+                        socketsId = [
+                            ...socketsId,
+                            userDoc[0]["socket"]
+                        ]
+
+                        if (tempUserArray.length - 1 == index) {
+                            console.log(socketsId)
+                            socketsId.forEach(id => io.to(id).emit("updateEmoji", res.emojiId))
+                        }
+                    })
+                })
+            }
+        })
+    })
+
+
+    socket.on("addMessage", res => {
+        roomSchema.update(
+            {
+                "roomName": res.roomName
+            },
+            {
+                $set: {
+                    "chat": res.message
+                }
+            },
+            (err, doc) => {
+                if (err) return
+                roomSchema.find({ "roomName": res.roomName }, (err, doc) => {
+                    if (err) return
+                    var socketsId = []
+                    var tempUserArray = [];
+                    if (doc.length == 0) return
+                    doc[0]["users"].forEach((user, index) => {
+                        tempUserArray = [
+                            ...tempUserArray,
+                            user
+                        ]
+                    })
+                    if (tempUserArray.length > 0) {
+                        tempUserArray.forEach((user, index) => {
+                            userSchema.find({ "name": user["name"] }, (err, userDoc) => {
+                                socketsId = [
+                                    ...socketsId,
+                                    userDoc[0]["socket"]
+                                ]
+
+                                if (tempUserArray.length - 1 == index) {
+                                    console.log(socketsId)
+                                    socketsId.forEach(id => io.to(id).emit("updateMessage", res.message))
+                                }
+                            })
+                        })
+                    }
+                })
+            }
+        );
+    })
+
     // Close the room
     socket.on("closeRoom", res => {
         roomSchema.find({ videoUrl: res }, (err, doc) => {
@@ -137,7 +257,6 @@ io.on('connection', (socket) => {
                         ]
 
                         if (usersArray.length - 1 == index) {
-                            console.log(socketsId)
                             socketsId.forEach(id => io.to(id).emit("closeVideo", {}))
                             roomSchema.deleteOne({ videoUrl: res }, (err, doc) => {
                                 if (err) console.log(err)
