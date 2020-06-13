@@ -85,6 +85,45 @@ route.post("/getRoom", (req, res) => {
     })
 })
 
+route.post("/findRoom", (req, res) => {
+    roomSchema.find({ "roomName": req.body.roomName }, (err, docs) => {
+        if (err) res.json(err)
+        else res.json(docs)
+    })
+})
+
+route.post("/refreshUser", (req, res) => {
+    roomSchema.find({ "roomName": req.body.roomName }, (err, doc) => {
+        if (err) return
+        var socketsId = []
+        var tempUserArray = [];
+        if (doc.length == 0) return
+        doc[0]["users"].forEach((user, index) => {
+            tempUserArray = [
+                ...tempUserArray,
+                user
+            ]
+        })
+        if (tempUserArray.length > 0) {
+            tempUserArray.forEach((user, index) => {
+                userSchema.find({ "name": user["name"] }, (err, userDoc) => {
+                    socketsId = [
+                        ...socketsId,
+                        userDoc[0]["socket"]
+                    ]
+
+                    if (tempUserArray.length - 1 == index) {
+                        console.log(socketsId)
+                        console.log("s")
+                        socketsId.forEach(id => io.to(id).emit("updateUser", { users: doc[0]["users"] }))
+                    }
+                })
+            })
+        }
+    })
+    res.json()
+})
+
 route.post("/addUser", (req, res) => {
     roomSchema.update(
         {
@@ -97,6 +136,34 @@ route.post("/addUser", (req, res) => {
         },
         (err, doc) => {
             if (err) return
+            roomSchema.find({ "roomName": req.body.roomName }, (err, doc) => {
+                if (err) return
+                var socketsId = []
+                var tempUserArray = [];
+                if (doc.length == 0) return
+                doc[0]["users"].forEach((user, index) => {
+                    tempUserArray = [
+                        ...tempUserArray,
+                        user
+                    ]
+                })
+                if (tempUserArray.length > 0) {
+                    tempUserArray.forEach((user, index) => {
+                        userSchema.find({ "name": user["name"] }, (err, userDoc) => {
+                            socketsId = [
+                                ...socketsId,
+                                userDoc[0]["socket"]
+                            ]
+
+                            if (tempUserArray.length - 1 == index) {
+                                console.log(socketsId)
+                                console.log("s")
+                                socketsId.forEach(id => io.to(id).emit("updateUser", req.body))
+                            }
+                        })
+                    })
+                }
+            })
             res.json()
         }
     )
